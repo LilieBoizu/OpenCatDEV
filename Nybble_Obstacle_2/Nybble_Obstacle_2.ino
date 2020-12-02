@@ -1,3 +1,14 @@
+/* 
+  Nybble doesn't like obstacles !
+
+  Nybble s'ennerve face aux obstacles 
+
+  QI informatique -- France 
+  2020
+
+*/
+
+
 /* Main Arduino sketch for Nybble, the walking robot kitten.
    Updates should be posted on GitHub: https://github.com/PetoiCamp/OpenCat
 
@@ -107,7 +118,7 @@ String translateIR() // takes action based on IR code received
     case 0xFF38C7: PTLF(" 5");            return (F("bk"));         //back
     case 0xFF5AA5: PTLF(" 6");            return (F("bkR"));        //back right
 
-    case 0xFF42BD: PTLF(" 7");            return (F("angry"));      //turbo
+    case 0xFF42BD: PTLF(" 7");            return (F("tb"));      //turbo
     case 0xFF4AB5: PTLF(" 8");            return (F("zero"));       //customed skill
     case 0xFF52AD: PTLF(" 9");            return (F("rc"));       //recover (turtle roll )
 #else
@@ -136,9 +147,9 @@ String translateIR() // takes action based on IR code received
     case 0xFF38C7:                        return (F("bk"));         //back
     case 0xFF5AA5:                        return (F("bkR"));        //back right
 
-    case 0xFF42BD:                        return (F("angry"));      //turbo
+    case 0xFF42BD:                        return (F("tb"));      //turbo
     case 0xFF4AB5:                        return (F("zero"));       //customed skill
-    case 0xFF52AD:                        return (F("rc"));       //recover (turtle roll )
+    case 0xFF52AD:                        return (F("grr"));       //angry
 #endif
 
     case 0xFFFFFFFF: return (""); //Serial.println(" REPEAT");
@@ -176,31 +187,7 @@ byte firstMotionJoint;
 byte jointIdx = 0;
 
 
-bool isMoving; 
-bool abortMotion;
-
 unsigned long usedTime = 0;
-
-void angry(){
-  char **bList = new char*[14];
-          bList[0] = "angry1";
-          bList[1] = "angry3";
-          bList[2] = "angry1";
-          bList[3] = "angry2";
-          bList[4] = "angry1";
-          bList[5] = "angry3";
-          bList[6] = "angry1";
-          bList[7] = "angry2";
-          bList[9] = "angry1";
-          bList[10] = "angry3";
-          bList[11] = "angry1";
-          bList[12] = "angry2";
-          bList[13] = "angry1";
-          float speedRatio[14] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
-          int pause[14] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-          behavior( 14, bList, speedRatio, pause);
-          delete []bList;
-}
 
 void checkBodyMotion()  {
   if (!dmpReady) return;
@@ -306,12 +293,36 @@ void checkBodyMotion()  {
   }
 }
 
-int count=0;
+void angry(){ //fonction ennerve
+  char **bList = new char*[14];
+  bList[0] = "angry1";
+  bList[1] = "angry3";
+  bList[2] = "angry1";
+  bList[3] = "angry2";
+  bList[4] = "angry1";
+  bList[5] = "angry3";
+  bList[6] = "angry1";
+  bList[7] = "angry2";
+  bList[9] = "angry1";
+  bList[10] = "angry3";
+  bList[11] = "angry1";
+  bList[12] = "angry2";
+  bList[13] = "angry1";
+  float speedRatio[14] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
+  int pause[14] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  behavior( 14, bList, speedRatio, pause);
+  delete []bList;
+}
+
+
+bool isMoving = false ; 
+bool abortMotion = false ; 
+int count = 0 ; 
+
 
 void setup() {
+  
 
-  isMoving=false; 
-  abortMotion=false;  
   
   pinMode(BUZZER, OUTPUT);
   // join I2C bus (I2Cdev library doesn't do this automatically)
@@ -429,33 +440,6 @@ void setup() {
   pinMode(ECHO, INPUT); // Sets the echoPin as an Input
   digitalWrite(VCC, HIGH);
   int t = 0;
-  int minDist, maxDist;
-  while (0) {//disabled for now. needs virtual threading to reduce lag in motion.
-    calibratedPWM(0, -10 * cos(t++*M_PI / 360));
-    calibratedPWM(1, 10 * sin(t++ * 2 * M_PI / 360));
-    digitalWrite(TRIGGER, LOW);
-    delayMicroseconds(2);
-
-    // Sets the trigPin on HIGH state for 10 micro seconds
-    digitalWrite(TRIGGER, HIGH);
-    digitalWrite(BUZZER, HIGH);
-    delayMicroseconds(10);
-    digitalWrite(TRIGGER, LOW);
-    digitalWrite(BUZZER, LOW);
-
-    // Reads the echoPin, returns the sound wave travel time in microseconds
-
-    long duration = pulseIn(ECHO, HIGH, farTime);
-
-    // Calculating the distance
-
-    int distance = duration * 0.034 / 2; // 10^-6 * 34000 cm/s
-
-    // Prints the distance on the Serial Monitor
-    Serial.print("Distance: ");
-    Serial.print(distance == 0 ? LONGEST_DISTANCE : distance);
-    Serial.println(" cm");
-  }
   meow();
 }
 
@@ -487,65 +471,37 @@ void loop() {
     //...
     //for obstacle avoidance and auto recovery
 
-    if (isMoving && (count%1000==0)){
+    // obstacle detection 
+    if (isMoving && (count%1500 == 0) ){
       digitalWrite(TRIGGER, LOW);
       delayMicroseconds(2);
-  
-      // Sets the trigPin on HIGH state for 10 micro seconds
+
       digitalWrite(TRIGGER, HIGH);
-      digitalWrite(BUZZER, HIGH);
       delayMicroseconds(10);
       digitalWrite(TRIGGER, LOW);
-      digitalWrite(BUZZER, LOW);
-  
-      // Reads the echoPin, returns the sound wave travel time in microseconds
-  
+
       long duration = pulseIn(ECHO, HIGH, farTime);
-  
-      // Calculating the distance
-  
-      int distance = duration * 0.034 / 2; // 10^-6 * 34000 cm/s
-  
-      // Prints the distance on the Serial Monitor
-      Serial.print("Distance: ");
-      Serial.print(distance);
-      Serial.println(" cm");
-  
-      
-      
+      int distance = duration * 0.034 / 2 ;
+
       if (distance<OBSTACLE_THRESHOLD && distance>0) {
-          digitalWrite(BUZZER, HIGH);
-          delay(500);
-          digitalWrite(BUZZER, LOW);
-          //angry();
-          //shutServos();
-          abortMotion=true;
-          
-          //Serial.println("all done");
-//          motion.loadBySkillName("rest");
-//          transform( motion.dutyAngles);
-          angry();
-  
-          motion.loadBySkillName("sit");
-          transform( motion.dutyAngles);
-          shutServos();
-          isMoving=false;
-          
-     
+        digitalWrite(BUZZER, HIGH);
+        delay(30);
+        digitalWrite(BUZZER, LOW);
+        angry();
+        motion.loadBySkillName("rest");
+        transform(motion.dutyAngles);
+        shutServos();
+        isMoving = false ; 
+        abortMotion = true ; 
+        count = 0 ;
       }
-    
+      
     }
-
-
-    
-    
-
     // input block
     //else if (t == 0) {
     if (irrecv.decode(&results)) {
       String IRsig = translateIR();
       if (IRsig != "") {
-        isMoving = false;
         strcpy(newCmd, IRsig.c_str());
         if (!strcmp(newCmd, "d"))
           token = 'd';
@@ -554,8 +510,10 @@ void loop() {
             countDown = 4;
           checkGyro = !checkGyro;
         }
+        else if (!strcmp(newCmd, "grr")){
+          angry();
+        }
         else if (!strcmp(newCmd, "hi")) {
-          //isMoving = false;
           motion.loadBySkillName("sit");
           transform( motion.dutyAngles);
           char **bList = new char*[2];
@@ -572,54 +530,7 @@ void loop() {
           transform( motion.dutyAngles);
           strcpy(newCmd, "rest");
         }
-        else if (!strcmp(newCmd, "rc")) {
-          //isMoving = false;
-          char **bList = new char*[10];
-          bList[0] = "rc1";
-          bList[1] = "rc2";
-          bList[2] = "rc3";
-          bList[3] = "rc4";
-          bList[4] = "rc5";
-          bList[5] = "rc6";
-          bList[6] = "rc7";
-          bList[7] = "rc8";
-          bList[8] = "rc9";
-          bList[9] = "rc10";
-          float speedRatio[10] = {2, 2, 2, 10, 5, 10, 5, 5, 5, 2};
-          int pause[10] = {500, 500, 500, 0, 0, 0, 0, 0, 0, 0};
-          behavior( 10, bList, speedRatio, pause);
-          strcpy(newCmd, "rest");
-          delete []bList;
-        }
-
-
-
-        
-        else if (!strcmp(newCmd, "angry")) {
-          //isMoving = false;
-          char **bList = new char*[14];
-          bList[0] = "angry1";
-          bList[1] = "angry3";
-          bList[2] = "angry1";
-          bList[3] = "angry2";
-          bList[4] = "angry1";
-          bList[5] = "angry3";
-          bList[6] = "angry1";
-          bList[7] = "angry2";
-          bList[9] = "angry1";
-          bList[10] = "angry3";
-          bList[11] = "angry1";
-          bList[12] = "angry2";
-          bList[13] = "angry1";
-          float speedRatio[14] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
-          int pause[14] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-          behavior( 14, bList, speedRatio, pause);
-          strcpy(newCmd, "rest");
-          delete []bList;
-
-        }
         else if (!strcmp(newCmd, "pu")) {
-          //isMoving = false;
           char **bList = new char*[2];
           bList[0] = "pu1";
           bList[1] = "pu2";
@@ -644,7 +555,6 @@ void loop() {
     //}
     if (newCmdIdx) {
       PTL(token);
-      abortMotion=false;
       beep(newCmdIdx * 4);
       // this block handles argumentless tokens
       switch (token) {
@@ -755,17 +665,16 @@ void loop() {
       while (Serial.available() && Serial.read()); //flush the remaining serial buffer in case the commands are parsed incorrectly
       //check above
       if (strcmp(newCmd, "") && strcmp(newCmd, lastCmd) ) {
-//              PT("compare lastCmd ");
-//              PT(lastCmd);
-//              PT(" with newCmd ");
-//              PT(token);
-//              PT(newCmd);
-//              PT("\n");
+        //      PT("compare lastCmd ");
+        //      PT(lastCmd);
+        //      PT(" with newCmd ");
+        //      PT(token);
+        //      PT(newCmd);
+        //      PT("\n");
         if (token == 'w') {}; //some words for undefined behaviors
 
         if (token == 'k') { //validating key
           
-          abortMotion=false;
           motion.loadBySkillName(newCmd);
           char lr = newCmd[strlen(newCmd) - 1];
           offsetLR = (lr == 'L' ? 15 : (lr == 'R' ? -15 : 0));
@@ -781,15 +690,23 @@ void loop() {
           // if posture, start jointIdx from 0
           // if gait, walking DOF = 8, start jointIdx from 8
           //          walking DOF = 12, start jointIdx from 4
-          firstMotionJoint = (motion.period == 1) ? 0 : DOF - WALKING_DOF;
-          isMoving = (firstMotionJoint == 0) ? false : true ;
+          abortMotion = false ; 
+          if (motion.period == 1) {
+            firstMotionJoint = 0;
+            isMoving = false;
+          }
+          else {
+            firstMotionJoint = DOF - WALKING_DOF;
+            isMoving = true;
+          }
+//          firstMotionJoint = (motion.period == 1) ? 0 : DOF - WALKING_DOF;
+//          isMoving = (motion.period == 1) ? false : true ; 
           transform( motion.dutyAngles,  1, firstMotionJoint);
           jointIdx = DOF;
 
           if (!strcmp(newCmd, "rest")) {
             shutServos();
             token = 'd';
-            //isMoving = false;
           }
         }
         else {
@@ -801,7 +718,7 @@ void loop() {
 
     //motion block
     {
-      if (token == 'k'&& !abortMotion) {
+      if (token == 'k' && !abortMotion) {
         if (jointIdx == DOF) {
 #ifdef SKIP
           if (updateFrame++ == SKIP) {
@@ -850,6 +767,5 @@ void loop() {
       }
     }
   }
-  count++;
-  //Serial.println(count);
+  count++ ; 
 }
