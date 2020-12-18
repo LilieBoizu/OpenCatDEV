@@ -1,0 +1,19 @@
+These files are Python scripts to control Nybble thanks to Raspberry Pi and a camera
+(see configuration on Assembly Instructions from Petoi : https://docs.petoi.com/ )
+
+The ardSerial.py file, from Petoi, is needed --> https://github.com/PetoiCamp/OpenCat
+
+*** Need to install opencv on Raspberry, see : https://www.pyimagesearch.com/2018/09/19/pip-install-opencv/
+--> go to the "How to pip install OpenCV on Raspberry Pi" section 
+
+*** Some scripts need TensorFlow : https://itnext.io/installing-tensorflow-2-3-0-for-raspberry-pi3-4-debian-buster-11447cb31fc4
+
+
+SCRIPTS :
+
+* color.py --> Controlling Nybble with colored signs 
+
+* vision.py --> Nybble says hi when he sees you 
+
+* mask_on.py --> Nybble gets angry if you don't wear a mask, and waits until you put one
+
