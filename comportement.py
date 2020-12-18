@@ -2,12 +2,19 @@
 from ardSerial import *
 
 
+# schedule = [['b25 160',3],\
+			# ['whiNybble',10],\
+            # ['kwk',10],\
+            # ['ksit',3],\
+            # ['b60 160',3],
+            # ['d',10]]
+
 schedule = [['b25 160',3],\
-			['whiNybble',10],\
             ['kwk',10],\
             ['ksit',3],\
             ['b60 160',3],
             ['d',10]]
+
 
 for task in schedule:
     wrapper(task)
